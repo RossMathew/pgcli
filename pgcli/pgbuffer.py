@@ -2,14 +2,13 @@ from __future__ import unicode_literals
 
 from prompt_toolkit.enums import DEFAULT_BUFFER
 from prompt_toolkit.filters import Condition
-from prompt_toolkit.application import get_app
 from .packages.parseutils.utils import is_open_quote
 
 
 def pg_is_multiline(pgcli):
     @Condition
     def cond():
-        doc = get_app().layout.get_buffer_by_name(DEFAULT_BUFFER).document
+        doc = pgcli.prompt_app.layout.get_buffer_by_name(DEFAULT_BUFFER).document
 
         if not pgcli.multi_line:
             return False

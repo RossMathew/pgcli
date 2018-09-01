@@ -1,16 +1,15 @@
 from __future__ import unicode_literals
 
 from prompt_toolkit.key_binding.vi_state import InputMode
-from prompt_toolkit.application import get_app
 
 
-def _get_vi_mode():
+def _get_vi_mode(cli):
     return {
         InputMode.INSERT: 'I',
         InputMode.NAVIGATION: 'N',
         InputMode.REPLACE: 'R',
         InputMode.INSERT_MULTIPLE: 'M',
-    }[get_app().vi_state.input_mode]
+    }[cli.vi_state.input_mode]
 
 
 def create_toolbar_tokens_func(pgcli):
@@ -42,7 +41,7 @@ def create_toolbar_tokens_func(pgcli):
 
         if pgcli.vi_mode:
             result.append(
-                ('class:bottom-toolbar', '[F4] Vi-mode (' + _get_vi_mode() + ')'))
+                ('class:bottom-toolbar', '[F4] Vi-mode (' + _get_vi_mode(pgcli) + ')'))
         else:
             result.append(('class:bottom-toolbar', '[F4] Emacs-mode'))
 
