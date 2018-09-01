@@ -38,6 +38,8 @@ from prompt_toolkit.layout.processors import (ConditionalProcessor,
                                               TabsProcessor)
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.application import get_app
+
 from pygments.lexers.sql import PostgresLexer
 
 from pgspecial.main import (PGSpecial, NO_QUERY, PAGER_OFF)
@@ -213,7 +215,8 @@ class PGCli(object):
         self._completer_lock = threading.Lock()
         self.register_special_commands()
 
-        self.prompt_app = None
+        self.prompt_app_initialized = False
+
 
     def quit(self):
         raise PgCliQuitError
@@ -526,7 +529,7 @@ class PGCli(object):
                 raise RuntimeError(message)
             while True:
                 try:
-                    text = self.prompt_app.prompt(default=sql)
+                    text = get_app().prompt(default=sql)
                     break
                 except KeyboardInterrupt:
                     sql = None
@@ -615,7 +618,7 @@ class PGCli(object):
         self.refresh_completions(history=history,
                                  persist_priorities='none')
 
-        self.prompt_app = self._build_cli(history)
+        self.prompt_app_initialized = self._build_cli(history)
 
         if not self.less_chatty:
             print('Server: PostgreSQL', self.pgexecute.get_server_version())
@@ -627,7 +630,7 @@ class PGCli(object):
         try:
             while True:
                 try:
-                    text = self.prompt_app.prompt()
+                    text = get_app().prompt()
                 except KeyboardInterrupt:
                     continue
 
@@ -695,7 +698,7 @@ class PGCli(object):
             complete_style = CompleteStyle.COLUMN
 
         with self._completer_lock:
-            prompt_app = PromptSession(
+            PromptSession(
                 lexer=PygmentsLexer(PostgresLexer),
                 reserve_space_for_menu=self.min_num_menu_lines,
                 message=get_message,
@@ -724,7 +727,8 @@ class PGCli(object):
                 editing_mode=EditingMode.VI if self.vi_mode else EditingMode.EMACS,
                 search_ignore_case=True)
 
-            return prompt_app
+            return True
+
 
     def _should_show_limit_prompt(self, status, cur):
         """returns True if limit prompt should be shown, False otherwise."""
@@ -768,7 +772,7 @@ class PGCli(object):
                     break
 
             if self.pgspecial.auto_expand or self.auto_expand:
-                max_width = self.prompt_app.output.get_size().columns
+                max_width = get_app().output.get_size().columns
             else:
                 max_width = None
 
@@ -837,10 +841,10 @@ class PGCli(object):
     def _on_completions_refreshed(self, new_completer, persist_priorities):
         self._swap_completer_objects(new_completer, persist_priorities)
 
-        if self.prompt_app:
+        if self.prompt_app_initialized:
             # After refreshing, redraw the CLI to clear the statusbar
             # "Refreshing completions..." indicator
-            self.prompt_app.app.invalidate()
+            get_app().app.invalidate()
 
     def _swap_completer_objects(self, new_completer, persist_priorities):
         """Swap the completer object with the newly created completer.
